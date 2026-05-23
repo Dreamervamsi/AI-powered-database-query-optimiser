@@ -1,8 +1,6 @@
 import time
 from collections import deque
 
-from config import settings
-
 _MAX_CALLS_PER_MINUTE = 10
 _timestamps: deque[float] = deque()
 

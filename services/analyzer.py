@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import settings
 from db import SessionLocal
 from models.optimization import OptimizationResult, OptimizationStatus, SlowQueryRecord
-from services.claude_client import claude_client
-from services.rate_limit import allow_claude_call
+from services.groq_client import groq_client
+from services.rate_limit import allow_groq_call
 from services.enrichment import compute_estimated_savings, compute_priority_score
 from services.explain import is_safe_select, run_explain_analyze
 from services.schema import fetch_schema_context
@@ -83,11 +83,11 @@ async def analyze_slow_query(
             explain_plan = await run_explain_analyze(session, sql_text)
             schema_context = await fetch_schema_context(session, sql_text)
 
-            if settings.anthropic_api_key and not allow_claude_call():
-                logger.warning("Claude rate limit reached; skipping API call")
+            if settings.groq_api_key and not allow_groq_call():
+                logger.warning("GROQ rate limit reached; skipping API call")
                 return None
 
-            parsed, raw = await claude_client.optimize_query(
+            parsed, raw = await groq_client.optimize_query(
                 sql_text, explain_plan, schema_context, duration_ms
             )
 

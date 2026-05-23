@@ -5,9 +5,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/data"
-    anthropic_api_key: str = ""
+    groq_api_key: str = ""
     slow_query_threshold_ms: int = 500
-    claude_model: str = "claude-sonnet-4-20250514"
+    groq_model: str = "groq-1.1"
     analysis_dedup_seconds: int = 3600
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 

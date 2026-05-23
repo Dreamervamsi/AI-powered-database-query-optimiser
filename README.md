@@ -1,13 +1,13 @@
 # AI-Powered Database Query Optimizer
 
-Monitors PostgreSQL queries from a FastAPI app, detects slow queries (>500ms by default), runs `EXPLAIN ANALYZE`, sends context to Claude, and surfaces optimization suggestions in a dashboard.
+Monitors PostgreSQL queries from a FastAPI app, detects slow queries (>500ms by default), runs `EXPLAIN ANALYZE`, sends context to GROQ, and surfaces optimization suggestions in a dashboard.
 
 ## Prerequisites
 
 - Python 3.11+
 - PostgreSQL with the `data` table (see `models/user.py`)
 - Node.js 18+ (for dashboard)
-- Anthropic API key (optional — mock analysis runs without it)
+- GROQ API key (optional — mock analysis runs without it)
 
 ## Setup
 
@@ -24,6 +24,8 @@ pip install -r requirements.txt
 ```bash
 copy .env.example .env
 ```
+
+Set `GROQ_API_KEY` in `.env`, or leave it blank for mock analysis.
 
 3. Start the API:
 
@@ -66,7 +68,7 @@ curl http://127.0.0.1:8000/api/optimizations
 
 1. SQLAlchemy event listeners time every query
 2. Queries over the threshold enqueue background analysis
-3. Analyzer runs EXPLAIN + schema fetch → Claude → parse → save
+3. Analyzer runs EXPLAIN + schema fetch → GROQ → parse → save
 4. React dashboard reads the REST API
 
 ## Tests

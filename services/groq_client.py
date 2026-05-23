@@ -5,9 +5,10 @@ from services.parser import OptimizationParseResult, parse_optimization_response
 from services.prompts import SYSTEM_PROMPT, build_user_prompt
 
 
-class ClaudeClient:
+class GroqClient:
     def __init__(self):
-        self._client = Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+        api_key = settings.groq_api_key
+        self._client = Anthropic(api_key=api_key) if api_key else None
 
     async def optimize_query(
         self,
@@ -20,7 +21,7 @@ class ClaudeClient:
 
         if not self._client:
             mock = OptimizationParseResult(
-                root_cause="Mock: sequential scan or missing index suspected (set ANTHROPIC_API_KEY for real analysis).",
+                root_cause="Mock: sequential scan or missing index suspected (set GROQ_API_KEY for real analysis).",
                 optimized_sql=sql,
                 index_suggestions=[
                     "-- Example: CREATE INDEX idx_data_email ON data (email);"
@@ -30,7 +31,7 @@ class ClaudeClient:
             return mock, json_dumps_mock(mock)
 
         message = self._client.messages.create(
-            model=settings.claude_model,
+            model=settings.groq_model,
             max_tokens=4096,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_prompt}],
@@ -40,7 +41,7 @@ class ClaudeClient:
             parsed = parse_optimization_response(raw)
         except Exception:
             repair = self._client.messages.create(
-                model=settings.claude_model,
+                model=settings.groq_model,
                 max_tokens=4096,
                 system="Return only valid JSON matching the required optimization schema.",
                 messages=[
@@ -60,4 +61,4 @@ def json_dumps_mock(result: OptimizationParseResult) -> str:
     return json.dumps(result.model_dump())
 
 
-claude_client = ClaudeClient()
+groq_client = GroqClient()

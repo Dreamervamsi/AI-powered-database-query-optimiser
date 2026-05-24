@@ -7,6 +7,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 from config import settings
+from services.sql_params import inline_positional_params
 
 request_route: ContextVar[str] = ContextVar("request_route", default="unknown")
 
@@ -47,7 +48,7 @@ def install_query_monitor(sync_engine: Engine):
         if duration_ms < settings.slow_query_threshold_ms:
             return
 
-        sql_text = str(statement)
+        sql_text = inline_positional_params(str(statement), parameters)
         payload = {
             "sql_text": sql_text,
             "sql_hash": _sql_hash(sql_text),

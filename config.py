@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/data"
     groq_api_key: str = ""
     slow_query_threshold_ms: int = 500
-    groq_model: str = "groq-1.1"
+    groq_model: str = "llama-3.3-70b-versatile"
     analysis_dedup_seconds: int = 3600
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 

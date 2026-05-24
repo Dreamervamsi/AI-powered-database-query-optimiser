@@ -123,7 +123,9 @@ export default function Dashboard() {
 
         {error && (
           <p className="mb-4 text-sm text-critical bg-critical/10 border border-critical/30 rounded-lg px-4 py-2">
-            {error} — is the API running on port 8000?
+            {error} — cannot reach the API at{" "}
+            <span className="font-mono text-xs">ai-powered-database-query-optimiser.onrender.com</span>
+            . Check CORS on the API service or wait for a cold start (~1 min).
           </p>
         )}
 

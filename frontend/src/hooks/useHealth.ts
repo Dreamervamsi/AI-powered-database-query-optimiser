@@ -12,6 +12,7 @@ export function useHealth(intervalMs = 10000) {
       setHealth(data);
       setLive(data.status === "ok");
     } catch {
+      setHealth(null);
       setLive(false);
     }
   }, []);

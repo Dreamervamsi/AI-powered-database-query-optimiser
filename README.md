@@ -119,11 +119,22 @@ pytest
    - `GROQ_API_KEY` → your key (optional; mock works without it).
    - `CORS_ORIGINS` → your frontend URL(s), comma-separated (e.g. `https://your-app.onrender.com`).
 5. Deploy. Tables are created on startup via `init_db()`.
-6. Test: `curl https://YOUR-SERVICE.onrender.com/health`
+6. Test: `curl https://ai-powered-database-query-optimiser.onrender.com/health`
 
-Or use the included `render.yaml` blueprint (**New** → **Blueprint**) and set `GROQ_API_KEY` + `CORS_ORIGINS` after deploy.
+## Live deployment
 
-**Frontend**: point the Vite proxy at your Render URL, or deploy the static frontend separately and set `CORS_ORIGINS` to that origin.
+| Service | URL |
+|---------|-----|
+| Dashboard | https://ai-powered-database-query-optimiser-1.onrender.com |
+| API | https://ai-powered-database-query-optimiser.onrender.com |
+
+**API `CORS_ORIGINS`** (Render → Web Service → Environment):
+
+```text
+https://ai-powered-database-query-optimiser-1.onrender.com,http://localhost:5173,http://127.0.0.1:5173
+```
+
+Or use the included `render.yaml` blueprint. More detail: [frontend/README.md](frontend/README.md).
 
 ## Security
 

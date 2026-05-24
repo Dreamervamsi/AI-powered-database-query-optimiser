@@ -6,6 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 SELECT_ONLY = re.compile(r"^\s*(select|with)\b", re.IGNORECASE)
 
+# Functions that cause side-effects or intentional delays — running EXPLAIN ANALYZE
+# on these would physically execute the delay and re-trigger the slow-query monitor
+# creating an infinite analysis loop.
+_SIDE_EFFECT_FN = re.compile(
+    r"\b(pg_sleep|pg_sleep_for|pg_sleep_until|dblink|lo_import|lo_export)\b",
+    re.IGNORECASE,
+)
+
 
 def is_safe_select(sql: str) -> bool:
     stripped = sql.strip().rstrip(";")
@@ -16,7 +24,13 @@ def is_safe_select(sql: str) -> bool:
         stripped,
         re.IGNORECASE,
     )
-    return forbidden is None
+    if forbidden:
+        return False
+    # Block queries with side-effect / delay functions — EXPLAIN ANALYZE would
+    # physically execute them and retrigger the slow-query interceptor.
+    if _SIDE_EFFECT_FN.search(stripped):
+        return False
+    return True
 
 
 async def run_explain_analyze(session: AsyncSession, sql: str) -> dict:

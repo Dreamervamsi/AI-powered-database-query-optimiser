@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchOptimization } from "../api";
 import type { OptimizationDetail, QueueItem } from "../types";
 import { formatMs } from "../utils";
@@ -15,6 +15,7 @@ export default function AiPanel({ selected, onStatusChange }: Props) {
   const [detail, setDetail] = useState<OptimizationDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [analyzeTimedOut, setAnalyzeTimedOut] = useState(false);
+  const [analyzeSlow, setAnalyzeSlow] = useState(false);
 
   const isAnalyzing =
     selected != null &&
@@ -27,10 +28,17 @@ export default function AiPanel({ selected, onStatusChange }: Props) {
   useEffect(() => {
     if (!isAnalyzing) {
       setAnalyzeTimedOut(false);
+      setAnalyzeSlow(false);
       return;
     }
-    const t = window.setTimeout(() => setAnalyzeTimedOut(true), 45000);
-    return () => window.clearTimeout(t);
+    // After 20 s show a "still processing" note (Groq + cold DB can be slow)
+    const tSlow = window.setTimeout(() => setAnalyzeSlow(true), 20000);
+    // After 90 s give up and show the error card
+    const tTimeout = window.setTimeout(() => setAnalyzeTimedOut(true), 90000);
+    return () => {
+      window.clearTimeout(tSlow);
+      window.clearTimeout(tTimeout);
+    };
   }, [isAnalyzing, selected?.id]);
 
   useEffect(() => {
@@ -84,6 +92,11 @@ export default function AiPanel({ selected, onStatusChange }: Props) {
       <div className="rounded-xl border border-gray-800 bg-card p-8 flex flex-col items-center justify-center gap-4 min-h-[280px]">
         <div className="h-10 w-10 border-2 border-gray-600 border-t-optimised rounded-full animate-spin" />
         <p className="text-gray-400">Running EXPLAIN ANALYZE…</p>
+        {analyzeSlow && (
+          <p className="text-xs text-yellow-500 max-w-xs text-center">
+            Still processing — Groq AI is analysing the query. This can take up to 90 s on a cold start.
+          </p>
+        )}
         <p className="text-xs text-gray-600 font-mono max-w-md text-center truncate">
           {selected.sql_text.slice(0, 120)}
         </p>

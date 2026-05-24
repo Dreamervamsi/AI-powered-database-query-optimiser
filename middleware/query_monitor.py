@@ -48,6 +48,12 @@ def install_query_monitor(sync_engine: Engine):
         if duration_ms < settings.slow_query_threshold_ms:
             return
 
+        # Skip EXPLAIN queries and anything with side-effect functions (pg_sleep, etc.)
+        # to prevent them from re-entering the analysis pipeline recursively.
+        stmt_upper = statement.strip().upper()
+        if stmt_upper.startswith("EXPLAIN") or "PG_SLEEP" in stmt_upper:
+            return
+
         sql_text = inline_positional_params(str(statement), parameters)
         payload = {
             "sql_text": sql_text,

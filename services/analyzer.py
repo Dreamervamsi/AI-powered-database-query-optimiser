@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
@@ -12,6 +13,18 @@ from services.rate_limit import allow_groq_call
 from services.enrichment import compute_estimated_savings, compute_priority_score
 from services.explain import is_safe_select, run_explain_analyze
 from services.schema import fetch_schema_context
+
+_SIDE_EFFECT_FN = re.compile(
+    r"\b(pg_sleep|pg_sleep_for|pg_sleep_until|dblink|lo_import|lo_export)\b",
+    re.IGNORECASE,
+)
+
+
+def _has_side_effects(sql: str) -> bool:
+    """True for SELECT queries that are safe SQL but unsafe to EXPLAIN ANALYZE
+    (e.g. contain pg_sleep). We still want to analyse these with Groq but must
+    skip the EXPLAIN step to avoid physically executing the delay."""
+    return bool(_SIDE_EFFECT_FN.search(sql))
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +74,16 @@ async def analyze_slow_query(
     duration_ms: float,
     route: str | None = None,
 ) -> int | None:
-    if not is_safe_select(sql_text):
+    # Hard skip for non-SELECT statements (INSERT, UPDATE, etc.)
+    # Use a simple regex here so we don't accidentally block pg_sleep SELECTs.
+    if not re.match(r"^\s*(select|with)\b", sql_text.strip(), re.IGNORECASE):
         logger.warning("Skipping analysis for non-SELECT query")
         return None
+
+    # Flag queries that contain side-effect functions (pg_sleep, etc.).
+    # We still analyze them with Groq but skip EXPLAIN ANALYZE to avoid
+    # physically executing the delay and re-triggering the slow-query monitor.
+    skip_explain = _has_side_effects(sql_text)
 
     async with SessionLocal() as session:
         try:
@@ -80,7 +100,13 @@ async def analyze_slow_query(
                 await session.commit()
                 return slow_record.id
 
-            explain_plan = await run_explain_analyze(session, sql_text)
+            # Run EXPLAIN ANALYZE only when safe (skip for pg_sleep-style queries)
+            if skip_explain:
+                logger.info("Skipping EXPLAIN ANALYZE for query with side-effect function")
+                explain_plan = {}
+            else:
+                explain_plan = await run_explain_analyze(session, sql_text)
+
             schema_context = await fetch_schema_context(session, sql_text)
 
             if settings.groq_api_key and not allow_groq_call():
@@ -92,11 +118,12 @@ async def analyze_slow_query(
             )
 
             estimated_savings = None
-            try:
-                after_plan = await run_explain_analyze(session, parsed.optimized_sql)
-                estimated_savings = compute_estimated_savings(duration_ms, after_plan)
-            except Exception as exc:
-                logger.debug("Could not estimate savings: %s", exc)
+            if not skip_explain:
+                try:
+                    after_plan = await run_explain_analyze(session, parsed.optimized_sql)
+                    estimated_savings = compute_estimated_savings(duration_ms, after_plan)
+                except Exception as exc:
+                    logger.debug("Could not estimate savings: %s", exc)
 
             priority = compute_priority_score(duration_ms, slow_record.execution_count)
 

@@ -1,17 +1,22 @@
 ﻿# DB Query Optimizer — Frontend
 
-Judge demo dashboard for slow-query capture, AI root-cause analysis, and one-click “Apply index”.
+React dashboard for slow-query capture, AI analysis results, and marking optimizations as reviewed.
+
+## Prerequisites
+
+Backend running on http://127.0.0.1:8000 (see root [README.md](../README.md)).
 
 ## Quick start
 
-**Terminal 1 — API**
+**Terminal 1 — API** (from repo root):
+
 ```bash
-cd ..
 .venv\Scripts\activate
-uvicorn main:app --reload
+python main.py
 ```
 
-**Terminal 2 — UI**
+**Terminal 2 — UI** (this folder):
+
 ```bash
 npm install
 npm run dev
@@ -19,13 +24,21 @@ npm run dev
 
 Open http://localhost:5173
 
-## 3-minute demo script
+## Using the dashboard
 
-1. Confirm green **Interceptor live** (polls `/health`).
-2. Click **Simulate slow query** → row appears with **Analyzing** → spinner on the right.
-3. Within ~10–30s, AI completes → **Root cause** fades in, confidence bar fills, before/after cards show.
-4. Click **Apply index** → badge flips to **Optimised** (PATCH `reviewed`; no real DDL).
+1. **Interceptor live** — polls `/health` for API status and slow-query threshold.
+2. **Simulate slow query** — calls `GET /users/slow-search`; a row appears while analysis runs.
+3. When analysis finishes, select a row to see root cause, confidence, and before/after SQL.
+4. **Apply index** — marks the item as `reviewed` via PATCH (no DDL is run on the database).
 
 ## Stack
 
-Vite, React 18, TypeScript, Tailwind CSS. Dev proxy forwards `/api`, `/health`, `/users` to `http://127.0.0.1:8000`.
+- Vite, React 18, TypeScript, Tailwind CSS
+- Dev server proxies `/api`, `/health`, and `/users` to `http://127.0.0.1:8000` (`vite.config.ts`)
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```

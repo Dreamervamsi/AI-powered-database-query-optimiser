@@ -105,6 +105,26 @@ pip install pytest
 pytest
 ```
 
+## Deploy backend on Render
+
+1. Push this repo to GitHub (if not already).
+2. [Render Dashboard](https://dashboard.render.com) → **New** → **PostgreSQL** → create DB (note the name).
+3. **New** → **Web Service** → connect the repo.
+   - **Root directory**: leave blank (repo root).
+   - **Build**: `pip install -r requirements.txt`
+   - **Start**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+   - **Health check path**: `/health`
+4. **Environment** (Web Service → Environment):
+   - `DATABASE_URL` → link the Postgres instance (**use internal URL** when both are on Render).
+   - `GROQ_API_KEY` → your key (optional; mock works without it).
+   - `CORS_ORIGINS` → your frontend URL(s), comma-separated (e.g. `https://your-app.onrender.com`).
+5. Deploy. Tables are created on startup via `init_db()`.
+6. Test: `curl https://YOUR-SERVICE.onrender.com/health`
+
+Or use the included `render.yaml` blueprint (**New** → **Blueprint**) and set `GROQ_API_KEY` + `CORS_ORIGINS` after deploy.
+
+**Frontend**: point the Vite proxy at your Render URL, or deploy the static frontend separately and set `CORS_ORIGINS` to that origin.
+
 ## Security
 
 - Only `SELECT` queries are analyzed
